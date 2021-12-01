@@ -2,11 +2,13 @@ package io.mosip.kernel.masterdata.dto;
 
 import java.time.LocalDateTime;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.mosip.kernel.masterdata.validator.OptionalStringFormatter;
 import io.mosip.kernel.masterdata.validator.StringFormatter;
 import io.swagger.annotations.ApiModelProperty;
@@ -22,14 +24,10 @@ import lombok.Data;
  */
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 // @ApiModel(value = "Machine", description = "Machine Detail resource")
 public class MachinePostReqDto {
 
-	/**
-	 * Field for machine id
-	 */
-
-	private String id;
 	/**
 	 * Field for machine name
 	 */
@@ -89,9 +87,12 @@ public class MachinePostReqDto {
 	@ApiModelProperty(value = "regCenterId",  dataType = "java.lang.String")
 	private String regCenterId;
 	
-	@ApiModelProperty(value = "publicKey", required = false, dataType = "java.lang.String")
+	
+	@NotBlank(message = "Public key cannot be blank or null")
+	@ApiModelProperty(value = "publicKey", required = true, dataType = "java.lang.String")
 	private String publicKey;
 
+	@NotBlank(message = "Sign public key cannot be blank or null")
 	@ApiModelProperty(value = "signPublicKey", required = false, dataType = "java.lang.String")
 	private String signPublicKey;
 

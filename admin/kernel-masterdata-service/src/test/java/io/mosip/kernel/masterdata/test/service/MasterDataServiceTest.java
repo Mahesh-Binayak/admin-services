@@ -12,13 +12,15 @@ import java.time.LocalTime;
 import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import io.mosip.kernel.masterdata.dto.request.WorkingDaysPutRequestDto;
 import io.mosip.kernel.masterdata.entity.*;
 import io.mosip.kernel.masterdata.repository.*;
+import io.mosip.kernel.masterdata.utils.*;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -104,11 +106,6 @@ import io.mosip.kernel.masterdata.service.TemplateFileFormatService;
 import io.mosip.kernel.masterdata.service.TemplateService;
 import io.mosip.kernel.masterdata.service.ZoneService;
 import io.mosip.kernel.masterdata.test.TestBootApplication;
-import io.mosip.kernel.masterdata.utils.AuditUtil;
-import io.mosip.kernel.masterdata.utils.MasterDataFilterHelper;
-import io.mosip.kernel.masterdata.utils.MasterdataCreationUtil;
-import io.mosip.kernel.masterdata.utils.MetaDataUtils;
-import io.mosip.kernel.masterdata.utils.ZoneUtils;
 import io.mosip.kernel.masterdata.validator.FilterColumnValidator;
 
 /**
@@ -359,6 +356,15 @@ public class MasterDataServiceTest {
 
 	private BiometricTypeDto biometricTypeDto;
 
+	@Autowired
+	RegistrationCenterValidator registrationCenterValidator;
+
+	@MockBean
+	ZoneUserRepository zoneUserRepository;
+
+	@MockBean
+	ZoneRepository zoneRepository;
+
 	@Before
 	public void setUp() {
 
@@ -400,7 +406,6 @@ public class MasterDataServiceTest {
 		when(locationHierarchyRepository1.findByLangCodeAndLevelAndName(Mockito.anyString(), Mockito.anyShort(),
 				Mockito.anyString())).thenReturn(hierarchy);
 		doNothing().when(auditUtil).auditRequest(Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
-
 	}
 
 	private void documentTypeSetup() {
@@ -725,13 +730,11 @@ public class MasterDataServiceTest {
 		biometricTypeList.add(biometricType2);
 
 		biometricTypeRequestWrapper = new RequestWrapper<BiometricTypeDto>();
-		// BiometricTypeData request = new BiometricTypeData();
 		biometricTypeDto = new BiometricTypeDto();
 		biometricTypeDto.setCode("1");
 		biometricTypeDto.setName("DNA MATCHING");
 		biometricTypeDto.setDescription(null);
 		biometricTypeDto.setIsActive(true);
-		// request.setBiometricType(biometricTypeDto);
 		biometricTypeRequestWrapper.setRequest(biometricTypeDto);
 	}
 
@@ -777,14 +780,12 @@ public class MasterDataServiceTest {
 		applicationList.add(application2);
 
 		applicationRequestWrapper = new RequestWrapper<ApplicationDto>();
-		// ApplicationData request = new ApplicationData();
 		applicationDto = new ApplicationDto();
 		applicationDto.setCode("101");
 		applicationDto.setName("pre-registeration");
 		applicationDto.setDescription("Pre-registration Application Form");
 		applicationDto.setLangCode("eng");
 		applicationDto.setIsActive(true);
-		// request.setApplicationtype(applicationDto);
 		applicationRequestWrapper.setRequest(applicationDto);
 	}
 
@@ -843,6 +844,11 @@ public class MasterDataServiceTest {
 		registrationCenter.setLatitude("12.9180722");
 		registrationCenter.setLongitude("77.5028792");
 		registrationCenter.setLangCode("ENG");
+		registrationCenter.setCreatedBy("system");
+		registrationCenter.setCreatedDateTime(LocalDateTime.now());
+		registrationCenter.setHolidayLocationCode("BLR");
+		registrationCenter.setLocationCode("BLR");
+		registrationCenter.setZoneCode("test");
 		registrationCenters.add(registrationCenter);
 
 		// ----
@@ -2033,10 +2039,8 @@ public class MasterDataServiceTest {
 	}
 
 
-	@Test
-	@Ignore
+	@Test(expected = RequestException.class)
 	public void updateLocationDetailsTest() {
-
 		Mockito.when(locationHierarchyRepository.findById(Mockito.any(), Mockito.any())).thenReturn(locationHierarchy);
 		Mockito.when(locationHierarchyRepository.update(Mockito.any())).thenReturn(locationHierarchy);
 
@@ -2498,30 +2502,6 @@ public class MasterDataServiceTest {
 
 	// ---------------------RegistrationCenterIntegrationTest-validatetimestamp----------------//
 
-	/*
-	 * @Test public void getStatusOfWorkingHoursRejectedTest() throws Exception {
-	 * Mockito.when(registrationCenterRepository.validateDateWithHoliday(Mockito.any
-	 * (), Mockito.any())) .thenReturn(true);
-	 * Mockito.when(registrationCenterRepository.findById(Mockito.any(),
-	 * Mockito.anyString())) .thenReturn(registrationCenter); LocalTime startTime =
-	 * LocalTime.of(10, 00, 000); LocalTime endTime = LocalTime.of(18, 00, 000);
-	 * registrationCenter.setCenterStartTime(startTime);
-	 * registrationCenter.setCenterEndTime(endTime);
-	 * 
-	 * mockMvc.perform(get(
-	 * "/registrationcenters/validate/1/2017-12-12T17:59:59.999Z"))
-	 * .andExpect(status().isOk());
-	 * 
-	 * 
-	 * ResgistrationCenterStatusResponseDto resgistrationCenterStatusResponseDto =
-	 * registrationCenterService .validateTimeStampWithRegistrationCenter("1",
-	 * "eng", "2017-12-12T17:59:59.999Z");
-	 * 
-	 * Assert.assertEquals(MasterDataConstant.INVALID,
-	 * resgistrationCenterStatusResponseDto.getStatus());
-	 * 
-	 * }
-	 */
 
 	@Test
 	public void getStatusOfWorkingHoursTest() throws Exception {
@@ -2536,12 +2516,6 @@ public class MasterDataServiceTest {
 
 		ResgistrationCenterStatusResponseDto resgistrationCenterStatusResponseDto = registrationCenterService
 				.validateTimeStampWithRegistrationCenter("1", "eng", "2017-12-12T17:59:59.999Z");
-
-		/*
-		 * mockMvc.perform(get(
-		 * "/registrationcenters/validate/1/2017-12-12T17:59:59.999Z"))
-		 * .andExpect(status().isOk());
-		 */
 
 		Assert.assertEquals(MasterDataConstant.VALID, resgistrationCenterStatusResponseDto.getStatus());
 
@@ -2612,13 +2586,37 @@ public class MasterDataServiceTest {
 	public void updateRegistrationCenterAdminStatusSuccessTest() {
 		StatusResponseDto dto = new StatusResponseDto();
 		dto.setStatus("Status updated successfully for Registration Centers");
+		List<Zone> zones = new ArrayList<>();
+		Zone zone = new Zone();
+		zone.setCode("test");
+		zone.setLangCode("eng");
+		zones.add(zone);
 
 		when(registrationCenterRepository.findByRegCenterIdAndIsDeletedFalseOrNull(Mockito.anyString()))
 				.thenReturn(registrationCenters);
 		when(masterdataCreationUtil.updateMasterDataStatus(Mockito.eq(RegistrationCenter.class), Mockito.anyString(),
 				Mockito.anyBoolean(), Mockito.anyString())).thenReturn(1);
+		when(zoneUtils.getSubZones(Mockito.anyString())).thenReturn(zones);
 		StatusResponseDto actual = registrationCenterService.updateRegistrationCenter("abc", false);
 		assertEquals(dto, actual);
+	}
+
+	@Test(expected = RequestException.class)
+	public void updateRegistrationCenterAdminStatusFailureTestWithInvalidZone() {
+		StatusResponseDto dto = new StatusResponseDto();
+		dto.setStatus("Status updated successfully for Registration Centers");
+		List<Zone> zones = new ArrayList<>();
+		Zone zone = new Zone();
+		zone.setCode("test1");
+		zone.setLangCode("eng");
+		zones.add(zone);
+
+		when(registrationCenterRepository.findByRegCenterIdAndIsDeletedFalseOrNull(Mockito.anyString()))
+				.thenReturn(registrationCenters);
+		when(masterdataCreationUtil.updateMasterDataStatus(Mockito.eq(RegistrationCenter.class), Mockito.anyString(),
+				Mockito.anyBoolean(), Mockito.anyString())).thenReturn(1);
+		when(zoneUtils.getSubZones(Mockito.anyString())).thenReturn(zones);
+		registrationCenterService.updateRegistrationCenter("abc", false);
 	}
 
 	@Test(expected = MasterDataServiceException.class)
@@ -2662,97 +2660,6 @@ public class MasterDataServiceTest {
 				.thenReturn(null);
 		registrationCenterTypeService.updateRegistrationCenterType("abc", false);
 	}
-
-	// ---------------------------------Registration Center
-	// TestCases----------------------------------
-	/*
-	 * @Test(expected= RequestException.class) public void
-	 * notAllCongfLangRegCenterCreateExcpTest() {
-	 * when(zoneUtils.getUserZones()).thenReturn(zones);
-	 * registrationCenterService.createRegistrationCenterAdmin(requestNotAllLang); }
-	 * 
-	 * @Test(expected= RequestException.class) public void
-	 * invalideLongitudeRegCenterCreateExcpTest() {
-	 * when(zoneUtils.getUserZones()).thenReturn(zones);
-	 * registrationCenterService.createRegistrationCenterAdmin(
-	 * requestSetLongitudeInvalide); }
-	 * 
-	 * @Test(expected= RequestException.class) public void
-	 * duplicateLangCodeRegCenterCreateExcpTest() {
-	 * when(zoneUtils.getUserZones()).thenReturn(zones);
-	 * registrationCenterService.createRegistrationCenterAdmin(requestDuplicateLang)
-	 * ; }
-	 * 
-	 * @Test(expected= RequestException.class) public void
-	 * startTimeValidationRegCenterCreateExcpTest() {
-	 * when(zoneUtils.getUserZones()).thenReturn(zones);
-	 * registrationCenterService.createRegistrationCenterAdmin(requestCenterTime); }
-	 * 
-	 * @Test(expected= RequestException.class) public void
-	 * lunchTimeValidationRegCenterCreateExcpTest() {
-	 * when(zoneUtils.getUserZones()).thenReturn(zones);
-	 * registrationCenterService.createRegistrationCenterAdmin(requestLunchTime); }
-	 * 
-	 * @Test(expected= RequestException.class) public void
-	 * zoneCodeValidationRegCenterCreateExcpTest() {
-	 * registrationCenterService.createRegistrationCenterAdmin(requestZoneCode); }
-	 */
-	/*
-	 * // ----------------------- update Registration center-----------------------
-	 * 
-	 * @Test(expected= RequestException.class) public void
-	 * notAllCongfLangRegCenterUpdateExcpTest() {
-	 * when(zoneUtils.getUserZones()).thenReturn(zones);
-	 * registrationCenterService.updateRegistrationCenterAdmin(updRequestNotAllLang)
-	 * ; }
-	 */
-
-	/*
-	 * @Test(expected= RequestException.class) public void
-	 * invalideIDRegCenterUpdateExcpTest() {
-	 * when(zoneUtils.getUserZones()).thenReturn(zones);
-	 * registrationCenterService.updateRegistrationCenterAdmin(updRequestInvalideID)
-	 * ; }
-	 */
-
-	/*
-	 * @Test(expected= RequestException.class) public void
-	 * invalideLongitudeRegCenterUpdateExcpTest() {
-	 * when(zoneUtils.getUserZones()).thenReturn(zones);
-	 * registrationCenterService.updateRegistrationCenterAdmin(
-	 * updRequestSetLongitudeInvalide); }
-	 */
-
-	/*
-	 * @Test(expected= RequestException.class) public void
-	 * duplicateIDLangCodeRegCenterUpdateExcpTest() {
-	 * when(zoneUtils.getUserZones()).thenReturn(zones);
-	 * registrationCenterService.updateRegistrationCenterAdmin(
-	 * updRequestDuplicateIDLang); }
-	 */
-
-	/*
-	 * @Test(expected= RequestException.class) public void
-	 * startTimeValidationRegCenterUpdateExcpTest() {
-	 * when(zoneUtils.getUserZones()).thenReturn(zones);
-	 * registrationCenterService.updateRegistrationCenterAdmin(updRequestCenterTime)
-	 * ; }
-	 */
-
-	/*
-	 * @Test(expected= RequestException.class) public void
-	 * lunchTimeValidationRegCenterUpdateExcpTest() {
-	 * when(zoneUtils.getUserZones()).thenReturn(zones);
-	 * registrationCenterService.updateRegistrationCenterAdmin(updRequestLunchTime);
-	 * }
-	 */
-
-	/*
-	 * @Test(expected= RequestException.class) public void
-	 * zoneCodeValidationRegCenterUpdateExcpTest() {
-	 * registrationCenterService.updateRegistrationCenterAdmin(updRequestZoneCode);
-	 * }
-	 */
 
 	// -----------------------------WorkingDayControllerTest------------------------
 
@@ -2889,7 +2796,7 @@ public class MasterDataServiceTest {
 	public void getWorkingDaysByLangCodeService() {
 
 		List<DaysOfWeek> globalDaysList = new ArrayList<DaysOfWeek>();
-		
+
 		DaysOfWeek daysOfWeek = new DaysOfWeek();
 		daysOfWeek.setCode("101");
 		daysOfWeek.setGlobalWorking(true);
@@ -2903,7 +2810,44 @@ public class MasterDataServiceTest {
 		assertEquals("Monday",
 				regWorkingNonWorkingService.getWorkingDays("eng").getWorkingdays().get(0).getName());
 	}
-	
+	@Test
+	public void updateWorkingDaysServiceTest() throws NoSuchFieldException, IllegalAccessException {
+		DaysOfWeek daysOfWeek = new DaysOfWeek();
+		WorkingDaysPutRequestDto workingDaysPutRequestDto=new WorkingDaysPutRequestDto();
+		daysOfWeek.setCode("101");
+		daysOfWeek.setGlobalWorking(true);
+		daysOfWeek.setDaySeq((short) 1);
+		daysOfWeek.setLangCode("eng");
+		daysOfWeek.setName("Monday");
+		workingDaysPutRequestDto= MapperUtils.map(daysOfWeek,workingDaysPutRequestDto);
+
+		Mockito.when(daysOfWeekRepo.findBylangCodeAndCode(Mockito.anyString(), Mockito.anyString()))
+				.thenReturn(daysOfWeek);
+		when(masterdataCreationUtil.updateMasterData(Mockito.eq(DaysOfWeek.class), Mockito.any()))
+				.thenReturn(workingDaysPutRequestDto);
+		assertEquals("Monday",
+				regWorkingNonWorkingService.updateWorkingDays(workingDaysPutRequestDto).getName());
+	}
+
+	@Test
+	public void updateWorkingDaysStatusServiceTest() throws NoSuchFieldException, IllegalAccessException {
+		List<DaysOfWeek> globalDaysList = new ArrayList<DaysOfWeek>();
+		StatusResponseDto dto = new StatusResponseDto();
+		dto.setStatus("Status updated successfully for workingDays");
+		DaysOfWeek daysOfWeek = new DaysOfWeek();
+		daysOfWeek.setCode("101");
+		daysOfWeek.setGlobalWorking(true);
+		daysOfWeek.setDaySeq((short) 1);
+		daysOfWeek.setLangCode("eng");
+		daysOfWeek.setName("Monday");
+		globalDaysList.add(daysOfWeek);
+		Mockito.when(daysOfWeekRepo.findByCode(Mockito.anyString()))
+				.thenReturn(globalDaysList);
+		when(masterdataCreationUtil.updateMasterDataStatus(Mockito.eq(DaysOfWeek.class), Mockito.anyString(),
+				Mockito.anyBoolean(), Mockito.anyString())).thenReturn(1);
+		StatusResponseDto actual=regWorkingNonWorkingService.updateWorkingDaysStatus("abc",false);
+		assertEquals(dto,actual);
+	}
 	@Test(expected = MasterDataServiceException.class)
 	public void getWorkingDaysServiceFailureTest() {
 		List<WorkingDaysDto> workingDaysDtos = new ArrayList<>();
@@ -2985,7 +2929,6 @@ public class MasterDataServiceTest {
 		when(masterdataCreationUtil.updateMasterDataStatus(Mockito.eq(Device.class), Mockito.anyString(),
 				Mockito.anyBoolean(), Mockito.anyString())).thenReturn(1);
 		when(deviceHistoryRepository.create(Mockito.any())).thenReturn(createdHistory);
-		//doNothing().when(deviceHistoryService.createDeviceHistory(Mockito.any()));
 		StatusResponseDto actual = deviceService.updateDeviceStatus("abc", false);
 		Assert.assertEquals(dto, actual);
 	}

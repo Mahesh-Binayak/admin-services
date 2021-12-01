@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import io.mosip.kernel.masterdata.utils.LanguageUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
@@ -68,6 +69,9 @@ public class ZoneServiceImpl implements ZoneService {
 	@Value("${mosip.kernel.registrationcenterid.length}")
 	private int centerIdLength;
 
+	@Autowired
+	private LanguageUtils languageUtils;
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -101,6 +105,35 @@ public class ZoneServiceImpl implements ZoneService {
 			List<Zone> zoneList = zones.parallelStream().filter(z -> z.getLangCode().equals(langCode))
 					.collect(Collectors.toList());
 			return MapperUtils.mapAll(zoneList, ZoneExtnDto.class);
+		}
+		return Collections.emptyList();	
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * io.mosip.kernel.masterdata.service.ZoneService#getSubZone(java.lang.
+	 * String, java.lang.
+	 * String)
+	 */
+	@Override
+	public List<ZoneExtnDto> getSubZones(String langCode) {
+		List<Zone> zones = zoneUtils.getSubZones(langCode);
+		if (zones != null && !zones.isEmpty()) {
+			List<Zone> zoneList = zones.parallelStream().filter(z -> z.getLangCode().equals(langCode))
+					.collect(Collectors.toList());
+			return MapperUtils.mapAll(zoneList, ZoneExtnDto.class);
+		}
+		return Collections.emptyList();	
+	}
+
+	
+	@Override
+	public List<ZoneExtnDto> getLeafZonesBasedOnLangCode(String langCode) {
+		List<Zone> zones = zoneUtils.getLeafZones(langCode);
+		if (zones != null && !zones.isEmpty()) {
+			return MapperUtils.mapAll(zones, ZoneExtnDto.class);
 		}
 		return Collections.emptyList();	
 	}
@@ -184,15 +217,19 @@ public class ZoneServiceImpl implements ZoneService {
 		ZoneNameResponseDto zoneNameResponseDto = new ZoneNameResponseDto();
 		Zone zone = null;
 		try {
-		zone = zoneRepository.findZoneByCodeAndLangCodeNonDeletedAndIsActive(zoneCode,langCode);
-		if (zone == null) {
-			throw new DataNotFoundException(ZoneErrorCode.ZONE_ENTITY_NOT_FOUND.getErrorCode(),
-					ZoneErrorCode.ZONE_ENTITY_NOT_FOUND.getErrorMessage());
-		}
+		zone = zoneRepository.findZoneByCodeAndLangCodeNonDeletedAndIsActive(zoneCode,
+				langCode == null? languageUtils.getDefaultLanguage() : langCode);
+
 		} catch (DataAccessException | DataAccessLayerException exception) {
 			throw new MasterDataServiceException(ZoneErrorCode.INTERNAL_SERVER_ERROR.getErrorCode(),
 					ZoneErrorCode.INTERNAL_SERVER_ERROR.getErrorMessage());
 		}
+
+		if (zone == null) {
+			throw new DataNotFoundException(ZoneErrorCode.ZONE_ENTITY_NOT_FOUND.getErrorCode(),
+					ZoneErrorCode.ZONE_ENTITY_NOT_FOUND.getErrorMessage());
+		}
+
 		zoneNameResponseDto.setZoneName(zone.getName());
 		return zoneNameResponseDto;
 	}
@@ -220,5 +257,12 @@ public class ZoneServiceImpl implements ZoneService {
 		}
 		return filterResponseDto;
 	}
+	
+	@Override
+	public List<Zone> getZoneListBasedonZoneName(String zoneName) {
+
+		return zoneRepository.findListZonesFromZoneName(zoneName.toLowerCase());
+	}
+
 
 }

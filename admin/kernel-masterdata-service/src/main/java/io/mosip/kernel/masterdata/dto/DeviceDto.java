@@ -2,11 +2,13 @@ package io.mosip.kernel.masterdata.dto;
 
 import java.time.LocalDateTime;
 
+import javax.annotation.Nullable;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.mosip.kernel.masterdata.validator.StringFormatter;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -21,13 +23,9 @@ import lombok.Data;
  */
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class DeviceDto {
 
-	/**
-	 * Field for device id
-	 */
-	@ApiModelProperty(value = "id", required = false, dataType = "java.lang.String")
-	private String id;
 	/**
 	 * Field for device name
 	 */

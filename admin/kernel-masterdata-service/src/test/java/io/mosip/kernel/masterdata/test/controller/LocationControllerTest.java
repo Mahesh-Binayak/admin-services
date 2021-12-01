@@ -262,7 +262,7 @@ public class LocationControllerTest {
 		MasterDataTest.checkResponse(
 				mockMvc.perform(MockMvcRequestBuilders.post("/locations").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(locationCreateDtoReq))).andReturn(),
-				"KER-MSD-391");
+				"KER-MSD-244");
 	}
 	
 	@Test
@@ -300,7 +300,7 @@ public class LocationControllerTest {
 		MasterDataTest.checkResponse(
 				mockMvc.perform(MockMvcRequestBuilders.post("/locations").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(locationCreateDtoReq))).andReturn(),
-				"KER-MSD-389");
+				"KER-MSD-243");
 	}
 
 	@Test
@@ -313,7 +313,7 @@ public class LocationControllerTest {
 								MockMvcRequestBuilders.post("/locations").contentType(MediaType.APPLICATION_JSON)
 										.content(mapper.writeValueAsString(locationCreateDtoReq)))
 								.andReturn(),
-						"KER-MSD-389");
+						"KER-MSD-243");
 	}
 
 	@Test
@@ -325,7 +325,7 @@ public class LocationControllerTest {
 		MasterDataTest.checkResponse(
 				mockMvc.perform(MockMvcRequestBuilders.post("/locations").contentType(MediaType.APPLICATION_JSON)
 						.content(mapper.writeValueAsString(locationCreateDtoReq))).andReturn(),
-				"KER-MSD-391");
+				"KER-MSD-244");
 	}
 	
 	@Test
@@ -388,14 +388,14 @@ public class LocationControllerTest {
 	}
 	
 
-	/*@Test
+	@Test
 	@WithUserDetails("global-admin")
 	public void t010getMissingLocationDetailsTest() throws Exception {
 
 		MasterDataTest.checkResponse(mockMvc.perform(
-				MockMvcRequestBuilders.get("/locations/missingids").param("langcode", "eng").param("fieldName", "RSK"))
+				MockMvcRequestBuilders.get("/locations/missingids/eng").param("fieldName", "name"))
 				.andReturn(),null);
-	}*/
+	}
 	
 	@Test
 	@WithUserDetails("global-admin")
@@ -518,8 +518,8 @@ public class LocationControllerTest {
 	@WithUserDetails("global-admin")
 	public void t20getMissingLocationDetailsFailTest() throws Exception {
 
-		MasterDataTest.checkResponse(mockMvc.perform(MockMvcRequestBuilders.get("/locations/missingids")
-				.param("langcode", "eng1").param("fieldName", "1")).andReturn(), "KER-MSD-026");
+		MasterDataTest.checkResponse(mockMvc.perform(MockMvcRequestBuilders.get("/locations/missingids/eng1")
+				.param("fieldName", "1")).andReturn(), "KER-LANG-ERR");
 
 	}
 

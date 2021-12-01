@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import io.mosip.kernel.masterdata.utils.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
@@ -60,17 +61,6 @@ import io.mosip.kernel.masterdata.repository.RegistrationCenterRepository;
 import io.mosip.kernel.masterdata.service.DeviceHistoryService;
 import io.mosip.kernel.masterdata.service.DeviceService;
 import io.mosip.kernel.masterdata.service.ZoneService;
-import io.mosip.kernel.masterdata.utils.AuditUtil;
-import io.mosip.kernel.masterdata.utils.DeviceUtils;
-import io.mosip.kernel.masterdata.utils.ExceptionUtils;
-import io.mosip.kernel.masterdata.utils.MapperUtils;
-import io.mosip.kernel.masterdata.utils.MasterDataFilterHelper;
-import io.mosip.kernel.masterdata.utils.MasterdataCreationUtil;
-import io.mosip.kernel.masterdata.utils.MasterdataSearchHelper;
-import io.mosip.kernel.masterdata.utils.MetaDataUtils;
-import io.mosip.kernel.masterdata.utils.OptionalFilter;
-import io.mosip.kernel.masterdata.utils.PageUtils;
-import io.mosip.kernel.masterdata.utils.ZoneUtils;
 import io.mosip.kernel.masterdata.validator.FilterColumnEnum;
 import io.mosip.kernel.masterdata.validator.FilterColumnValidator;
 import io.mosip.kernel.masterdata.validator.FilterTypeEnum;
@@ -93,6 +83,9 @@ public class DeviceServiceImpl implements DeviceService {
 	 */
 	@Autowired
 	DeviceRepository deviceRepository;
+
+	@Autowired
+	LanguageUtils languageUtils;
 
 	@Autowired
 	RegistrationCenterRepository regCenterRepository;
@@ -125,9 +118,6 @@ public class DeviceServiceImpl implements DeviceService {
 
 	@Autowired
 	private ZoneService zoneService;
-
-	@Value("#{'${mosip.mandatory-languages}'.concat('${mosip.optional-languages}')}")
-	private String supportedLang;
 
 	@Autowired
 	private MasterdataCreationUtil masterdataCreationUtil;
@@ -208,17 +198,15 @@ public class DeviceServiceImpl implements DeviceService {
 		DeviceHistory entityHistory = null;
 		DeviceExtnDto deviceExtnDto = new DeviceExtnDto();
 		try {
-			validateZone(deviceDto.getZoneCode());
+			validateZone(deviceDto.getZoneCode(),deviceDto.getLangCode());
 			if (deviceDto.getRegCenterId() != null && !deviceDto.getRegCenterId().isEmpty()) {
 				validateRegistrationCenter(deviceDto.getRegCenterId());
 				validateRegistrationCenterZone(deviceDto.getZoneCode(), deviceDto.getRegCenterId());
 			}
-			if (deviceDto.getId() == null || deviceDto.getId().isBlank()) {
-				deviceDto.setId(generateId());
-			}
 			if (deviceDto != null) {
 				entity = MetaDataUtils.setCreateMetaData(deviceDto, Device.class);
-				entityHistory = MetaDataUtils.setCreateMetaData(deviceDto, DeviceHistory.class);
+				entity.setId(generateId());
+				entityHistory = MetaDataUtils.setCreateMetaData(entity, DeviceHistory.class);
 				entityHistory.setEffectDateTime(entity.getCreatedDateTime());
 				entityHistory.setCreatedDateTime(entity.getCreatedDateTime());
 
@@ -349,9 +337,7 @@ public class DeviceServiceImpl implements DeviceService {
 
 		List<DeviceSearchDto> devices = null;
 		List<SearchFilter> addList = new ArrayList<>();
-		List<SearchFilter> mapStatusList = new ArrayList<>();
 		List<SearchFilter> removeList = new ArrayList<>();
-		List<String> mappedDeviceIdList = null;
 		List<SearchFilter> zoneFilter = new ArrayList<>();
 		List<Zone> zones = null;
 		boolean flag = true;
@@ -360,42 +346,6 @@ public class DeviceServiceImpl implements DeviceService {
 
 		for (SearchFilter filter : dto.getFilters()) {
 			String column = filter.getColumnName();
-			if (column.equalsIgnoreCase("name")) {
-				filter.setType("contains");
-				filter.setValue("*"+filter.getValue()+"*");
-			}
-			if (column.equalsIgnoreCase("mapStatus")) {
-
-				if (filter.getValue().equalsIgnoreCase("assigned")) {
-					mappedDeviceIdList = deviceRepository.findMappedDeviceId();
-					mapStatusList.addAll(buildRegistrationCenterDeviceTypeSearchFilter(mappedDeviceIdList));
-					if (!dto.getFilters().isEmpty() && mappedDeviceIdList.isEmpty()) {
-						pageDto = pageUtils.sortPage(devices, dto.getSort(), dto.getPagination());
-						return pageDto;
-					}
-
-				} else {
-					if (filter.getValue().equalsIgnoreCase("unassigned")) {
-						mappedDeviceIdList = deviceRepository.findNotMappedDeviceId();
-						mapStatusList.addAll(buildRegistrationCenterDeviceTypeSearchFilter(mappedDeviceIdList));
-						isAssigned = false;
-						if (!dto.getFilters().isEmpty() && mappedDeviceIdList.isEmpty()) {
-							pageDto = pageUtils.sortPage(devices, dto.getSort(), dto.getPagination());
-							return pageDto;
-						}
-					} else {
-						auditUtil.auditRequest(
-								String.format(MasterDataConstant.SEARCH_FAILED, DeviceDto.class.getSimpleName()),
-								MasterDataConstant.AUDIT_SYSTEM,
-								String.format(MasterDataConstant.SEARCH_FAILED, DeviceSearchDto.class.getSimpleName()),
-								"ADM-509");
-						throw new RequestException(DeviceErrorCode.INVALID_DEVICE_FILTER_VALUE_EXCEPTION.getErrorCode(),
-								DeviceErrorCode.INVALID_DEVICE_FILTER_VALUE_EXCEPTION.getErrorMessage());
-					}
-
-				}
-				removeList.add(filter);
-			}
 
 			if (column.equalsIgnoreCase("deviceTypeName")) {
 				filter.setColumnName(MasterDataConstant.NAME);
@@ -412,7 +362,7 @@ public class DeviceServiceImpl implements DeviceService {
 		}
 		if (flag) {
 
-			zones = zoneUtils.getUserZones();
+			zones = zoneUtils.getSubZones(dto.getLanguageCode());
 			if (zones != null && !zones.isEmpty()) {
 				zoneFilter.addAll(buildZoneFilter(zones));
 			} else {
@@ -438,25 +388,18 @@ public class DeviceServiceImpl implements DeviceService {
 			OptionalFilter optionalFilter = new OptionalFilter(addList);
 			OptionalFilter zoneOptionalFilter = new OptionalFilter(zoneFilter);
 			Page<Device> page = null;
-			if (mapStatusList.isEmpty() || addList.isEmpty()) {
-				addList.addAll(mapStatusList);
+			if (addList.isEmpty()) {
 				page = masterdataSearchHelper.searchMasterdataWithoutLangCode(Device.class, dto,
 						new OptionalFilter[] { optionalFilter, zoneOptionalFilter });
 			} else {
 				page = masterdataSearchHelper.nativeDeviceQuerySearch(dto, typeName, zones, isAssigned);
 			}
 
-			if (page.getContent() != null && !page.getContent().isEmpty()) {
+			if (page != null && page.getContent() != null && !page.getContent().isEmpty()) {
 				devices = MapperUtils.mapAll(page.getContent(), DeviceSearchDto.class);
 				setDeviceMetadata(devices, zones);
 				setDeviceTypeNames(devices);
-				setMapStatus(devices);
-				devices.forEach(device -> {
-					if (device.getMapStatus() == null) {
-						device.setMapStatus("unassigned");
-					}
-				});
-
+				setMapStatus(devices,dto.getLanguageCode());
 				pageDto = pageUtils.sortPage(devices, sort, pagination);
 
 			}
@@ -502,17 +445,15 @@ public class DeviceServiceImpl implements DeviceService {
 	 * 
 	 * @param list the {@link DeviceSearchDto}.
 	 */
-	private void setMapStatus(List<DeviceSearchDto> list) {
-		List<RegistrationCenter> registrationCenterList = deviceUtil.getAllRegistrationCenters();
+	private void setMapStatus(List<DeviceSearchDto> list, String langCode) {
+		List<RegistrationCenter> registrationCenterList = deviceUtil.getAllRegistrationCenters(langCode);
 		list.forEach(deviceSearchDto -> {
-			String regId = deviceSearchDto.getRegCenterId();
-			String zoneCode=deviceSearchDto.getZoneCode();
-			String langCode=deviceSearchDto.getLangCode();
-			registrationCenterList.forEach(registrationCenter -> {
-				if (registrationCenter.getId().equals(regId) && registrationCenter.getLangCode().toString().equalsIgnoreCase(langCode)) {
-					deviceSearchDto.setMapStatus(registrationCenter.getName());
-				}
-			});
+			Optional<RegistrationCenter> result = registrationCenterList.stream()
+					.filter(d -> d.getId().equals(deviceSearchDto.getRegCenterId()))
+					.findFirst();
+			deviceSearchDto.setMapStatus(result.isPresent() ?
+					String.format("%s (%s)", deviceSearchDto.getRegCenterId(), result.get().getName()) :
+					deviceSearchDto.getRegCenterId());
 		});
 	}
 
@@ -678,7 +619,7 @@ public class DeviceServiceImpl implements DeviceService {
 	public FilterResponseCodeDto deviceFilterValues(FilterValueDto filterValueDto) {
 		FilterResponseCodeDto filterResponseDto = new FilterResponseCodeDto();
 		List<ColumnCodeValue> columnValueList = new ArrayList<>();
-		List<Zone> zones = zoneUtils.getUserZones();
+		List<Zone> zones = zoneUtils.getSubZones(filterValueDto.getLanguageCode());
 		List<SearchFilter> zoneFilter = new ArrayList<>();
 		if (zones != null && !zones.isEmpty()) {
 			zoneFilter.addAll(buildZoneFilter(zones));
@@ -755,7 +696,7 @@ public class DeviceServiceImpl implements DeviceService {
 		List<String> zoneIds;
 
 		// get user zone and child zones list
-		List<Zone> userZones = zoneUtils.getUserZones();
+		List<Zone> userZones = zoneUtils.getSubZones(languageUtils.getDefaultLanguage());
 		zoneIds = userZones.parallelStream().map(Zone::getCode).collect(Collectors.toList());
 
 		// check the given device and registration center zones are come under user zone
@@ -835,7 +776,7 @@ public class DeviceServiceImpl implements DeviceService {
 
 		// call method to check the machineZone will come under Accessed user zone or
 		// not
-		validateZone(deviecZone);
+		validateZone(deviecZone,devicePutReqDto.getLangCode());
 		try {
 			if (devicePutReqDto.getRegCenterId() != null && !devicePutReqDto.getRegCenterId().isEmpty()) {
 				validateRegistrationCenter(devicePutReqDto.getRegCenterId());
@@ -896,12 +837,14 @@ public class DeviceServiceImpl implements DeviceService {
 	}
 
 	// method to check the deviceZone will come under Accessed user zone or not
-	private void validateZone(String deviceZone) {
+	private void validateZone(String deviceZone,String langCode) {
 		List<String> zoneIds;
 		// get user zone and child zones list
-		List<Zone> userZones = zoneUtils.getUserZones();
+		if(langCode==null)
+			langCode=languageUtils.getDefaultLanguage();
+		List<Zone> subZones = zoneUtils.getSubZones(langCode);
 
-		zoneIds = userZones.parallelStream().map(Zone::getCode).collect(Collectors.toList());
+		zoneIds = subZones.parallelStream().map(Zone::getCode).collect(Collectors.toList());
 
 		if (!(zoneIds.contains(deviceZone))) {
 			// check the given device zones will come under accessed user zones
@@ -920,13 +863,13 @@ public class DeviceServiceImpl implements DeviceService {
 	}
 
 	private void validateRegistrationCenterZone(String zoneCode, String regCenterId) {
-		List<Zone> userZones = zoneUtils.getUserZones();
+		List<Zone> subZones = zoneUtils.getSubZones(languageUtils.getDefaultLanguage());
 		boolean isRegCenterMappedToUserZone = false;
 		boolean isInSameHierarchy = false;
 		Zone registrationCenterZone = null;
-		List<String> zoneIds = userZones.parallelStream().map(Zone::getCode).collect(Collectors.toList());
+		List<String> zoneIds = subZones.parallelStream().map(Zone::getCode).collect(Collectors.toList());
 		List<RegistrationCenter> centers = regCenterRepository.findByRegId(regCenterId);
-		for (Zone zone : userZones) {
+		for (Zone zone : subZones) {
 
 			if (zone.getCode().equals(centers.get(0).getZoneCode())) {
 				isRegCenterMappedToUserZone = true;
@@ -939,13 +882,11 @@ public class DeviceServiceImpl implements DeviceService {
 					DeviceErrorCode.INVALID_CENTER_ZONE.getErrorMessage());
 		}
 		Objects.requireNonNull(registrationCenterZone, "registrationCenterZone is empty");
-		String hierarchyPath = registrationCenterZone.getHierarchyPath();
-		List<String> zoneHierarchy = Arrays.asList(hierarchyPath.split("/"));
-		isInSameHierarchy = zoneHierarchy.stream().anyMatch(zone -> zone.equals(zoneCode));
+	/*	isInSameHierarchy = subZones.stream().anyMatch(zone -> zone.equals(zoneCode));
 		if (!isInSameHierarchy) {
 			throw new RequestException(DeviceErrorCode.INVALID_CENTER_ZONE.getErrorCode(),
 					DeviceErrorCode.INVALID_CENTER_ZONE.getErrorMessage());
-		}
+		}*/
 	}
 
 	@Override
@@ -967,12 +908,10 @@ public class DeviceServiceImpl implements DeviceService {
 					DeviceErrorCode.DEVICE_FETCH_EXCEPTION.getErrorMessage()
 							+ ExceptionUtils.parseException(accessException));
 		}
-		if (devices != null) {
+		if (devices != null && !devices.isEmpty()) {
 			masterdataCreationUtil.updateMasterDataStatus(Device.class, id, isActive, "id");
-			MapperUtils.map(devices.get(0), deviceHistory);
-			MapperUtils.setBaseFieldValue(devices.get(0), deviceHistory);
-			deviceHistory.setEffectDateTime(LocalDateTime.now());
-			deviceHistory.setUpdatedDateTime(LocalDateTime.now());
+			MetaDataUtils.setUpdateMetaData(devices.get(0), deviceHistory, true);
+			deviceHistory.setEffectDateTime(LocalDateTime.now(ZoneId.of("UTC")));
 			deviceHistory.setIsActive(isActive);
 			deviceHistoryService.createDeviceHistory(deviceHistory);
 		} else {

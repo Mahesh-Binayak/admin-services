@@ -2,9 +2,12 @@ package io.mosip.kernel.masterdata.service.impl;
 
 
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.mosip.kernel.masterdata.utils.LanguageUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -13,30 +16,24 @@ import io.mosip.kernel.masterdata.service.ApplicationConfigService;
 @Component
 public class ApplicationConfigServiceImpl implements ApplicationConfigService {
 
-	@Value("${mosip.mandatory-languages}")
-	private String mandatoryLang;
-
-	@Value("${mosip.optional-languages}")
-	private String optionalLang;
-	
 	@Value("${aplication.configuration.level.version}")
 	private String version;
 	
 	@Value("${mosip.recommended.centers.locCode}")
 	private String locationHierarchyLevel;
-	
-	@Value("${mosip.supported-languages}")
-	private String supportedLanguages;
-	
+		
 	@Value("${mosip.admin.ui.configs}")
 	private String uiConfigs;
+
+	@Autowired
+	LanguageUtils languageUtils;
 
 	@Override
 	public ApplicationConfigResponseDto getLanguageConfigDetails() {
 		ApplicationConfigResponseDto dto=new ApplicationConfigResponseDto();
 		
-		dto.setMandatoryLanguages(mandatoryLang);
-		dto.setOptionalLanguages(optionalLang);
+		dto.setMandatoryLanguages(String.join(",", languageUtils.getMandatoryLanguages()));
+		dto.setOptionalLanguages(String.join(",", languageUtils.getOptionalLanguages()));
 		dto.setVersion(version);
 		dto.setLocationHierarchyLevel(locationHierarchyLevel);
 		return dto;

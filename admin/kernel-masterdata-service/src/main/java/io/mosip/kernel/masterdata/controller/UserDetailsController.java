@@ -28,6 +28,7 @@ import io.mosip.kernel.masterdata.dto.UserDetailsPutDto;
 import io.mosip.kernel.masterdata.dto.UserDetailsPutReqDto;
 import io.mosip.kernel.masterdata.dto.UsersDto;
 import io.mosip.kernel.masterdata.dto.getresponse.StatusResponseDto;
+import io.mosip.kernel.masterdata.dto.getresponse.extn.UserCenterMappingExtnDto;
 import io.mosip.kernel.masterdata.dto.getresponse.extn.UserDetailsExtnDto;
 import io.mosip.kernel.masterdata.dto.postresponse.IdResponseDto;
 import io.mosip.kernel.masterdata.dto.request.SearchDto;
@@ -87,7 +88,7 @@ public class UserDetailsController {
 	/**
 	 * Post API to insert a new row of user
 	 * 
-	 * @param userDetailsDto input from user DTO
+	 * @param userDetailsDtoRequest input from user DTO
 	 * 
 	 * @return Responding with Machine which is inserted successfully
 	 *         {@link ResponseEntity}
@@ -95,7 +96,7 @@ public class UserDetailsController {
 	@ResponseFilter
 	@PreAuthorize("hasAnyRole(@authorizedRoles.getGetusercentermapping())")
 	//@PreAuthorize("hasAnyRole('GLOBAL_ADMIN','ZONAL_ADMIN')")
-	@PostMapping("usercentermapping")
+	@PostMapping("/usercentermapping")
 	@ApiOperation(value = "Service to map Users with regcenter", notes = "Maps User Detail and return User id")
 	@ApiResponses({ @ApiResponse(code = 201, message = "When User and Registration center successfully mapped"),
 			@ApiResponse(code = 400, message = "When Request is invalid"),
@@ -161,6 +162,7 @@ public class UserDetailsController {
 	 *         {@link ResponseEntity}
 	 */
 	@ResponseFilter
+	@Deprecated
     //@PreAuthorize("hasAnyRole('GLOBAL_ADMIN','ZONAL_ADMIN')")
     @PreAuthorize("hasAnyRole(@authorizedRoles.getDeleteusersid())")
     @DeleteMapping("/users/{id}")
@@ -170,6 +172,33 @@ public class UserDetailsController {
 			@ApiResponse(code = 404, message = "When No Regcenter found"),
 			@ApiResponse(code = 500, message = "While mapping user to regcenter any error occured") })
 	public ResponseWrapper<IdResponseDto> deleteUserRegCenter(@PathVariable("id") String userId) {
+		auditUtil.auditRequest(MasterDataConstant.DECOMMISION_API_CALLED + UserDetailsController.class.getCanonicalName(),
+				MasterDataConstant.AUDIT_SYSTEM,
+				MasterDataConstant.DECOMMISION_API_CALLED + UserDetailsController.class.getCanonicalName());
+		ResponseWrapper<IdResponseDto> responseWrapper = new ResponseWrapper<>();
+		
+		responseWrapper.setResponse(userDetailsService.deleteUser(userId));
+		return responseWrapper;
+	}
+	
+	
+	/**
+	 * Delete API to delete a  row of user data
+	 *
+	 * 
+	 * @return Responding with Machine which is inserted successfully
+	 *         {@link ResponseEntity}
+	 */
+	@ResponseFilter
+    //@PreAuthorize("hasAnyRole('GLOBAL_ADMIN','ZONAL_ADMIN')")
+    @PreAuthorize("hasAnyRole(@authorizedRoles.getDeleteusersid())")
+    @DeleteMapping("/usercentermapping/{id}")
+	@ApiOperation(value = "Service to delete User", notes = "delete the User Detail and return User id")
+	@ApiResponses({ @ApiResponse(code = 201, message = "When User and Registration center successfully mapped"),
+			@ApiResponse(code = 400, message = "When Request is invalid"),
+			@ApiResponse(code = 404, message = "When No Regcenter found"),
+			@ApiResponse(code = 500, message = "While mapping user to regcenter any error occured") })
+	public ResponseWrapper<IdResponseDto> deleteUserRegCenterMapping(@PathVariable("id") String userId) {
 		auditUtil.auditRequest(MasterDataConstant.DECOMMISION_API_CALLED + UserDetailsController.class.getCanonicalName(),
 				MasterDataConstant.AUDIT_SYSTEM,
 				MasterDataConstant.DECOMMISION_API_CALLED + UserDetailsController.class.getCanonicalName());
@@ -199,8 +228,6 @@ public class UserDetailsController {
 		auditUtil.auditRequest(MasterDataConstant.GET_USER_DETAILS_API_IS_CALLED + UserDetailsController.class.getCanonicalName(),
 				MasterDataConstant.AUDIT_SYSTEM,
 				MasterDataConstant.GET_USER_DETAILS_API_IS_CALLED + UserDetailsController.class.getCanonicalName());
-		/*responseWrapper.setResponse(userDetailsService.getUsers(roleName,pageStart, pageFetch, email,
-				firstName, lastName, userName));*/
 		responseWrapper.setResponse(userDetailsService.getUsers(roleName,pageStart, pageFetch,
 				firstName, lastName, userName));
 		return responseWrapper;
@@ -208,14 +235,15 @@ public class UserDetailsController {
 	
 	/**
 	 * This api is for searching the user details.
-	 * @param roleName
+	 * @param dto
 	 * @return
 	 */	
 	//@PreAuthorize("hasAnyRole('GLOBAL_ADMIN','ZONAL_ADMIN')")
+	@Deprecated
 	@ResponseFilter
 	@PreAuthorize("hasAnyRole(@authorizedRoles.getGetuserssearch())")
 	@PostMapping(value = "/users/search")
-	public ResponseWrapper<PageResponseDto<UserDetailsExtnDto>> serachUsersDetails(
+	public ResponseWrapper<PageResponseDto<UserDetailsExtnDto>> searchUsersDetails(
 			@RequestBody @Valid RequestWrapper<SearchDtoWithoutLangCode> dto) {
 		ResponseWrapper<PageResponseDto<UserDetailsExtnDto>> responseWrapper = new ResponseWrapper<>();
 		auditUtil.auditRequest(MasterDataConstant.SEARCH_USER_DETAILS_API_IS_CALLED + SearchDto.class.getCanonicalName(),
@@ -224,4 +252,24 @@ public class UserDetailsController {
 		responseWrapper.setResponse(userDetailsService.searchUserDetails(dto.getRequest()));
 		return responseWrapper;
 	}
+	
+	/**
+	 * This api is for searching the user details.
+	 * @param dto
+	 * @return
+	 */	
+	@ResponseFilter
+	@PreAuthorize("hasAnyRole(@authorizedRoles.getGetuserssearch())")
+	@PostMapping(value = "/usercentermapping/search")
+	public ResponseWrapper<PageResponseDto<UserCenterMappingExtnDto>> serachUserCenterMappingDetails(
+			@RequestBody @Valid RequestWrapper<SearchDtoWithoutLangCode> dto) {
+		ResponseWrapper<PageResponseDto<UserCenterMappingExtnDto>> responseWrapper = new ResponseWrapper<>();
+		auditUtil.auditRequest(MasterDataConstant.SEARCH_USER_DETAILS_API_IS_CALLED + SearchDto.class.getCanonicalName(),
+				MasterDataConstant.AUDIT_SYSTEM,
+				MasterDataConstant.SEARCH_USER_DETAILS_API_IS_CALLED + SearchDto.class.getCanonicalName());
+		responseWrapper.setResponse(userDetailsService.serachUserCenterMappingDetails(dto.getRequest()));
+		return responseWrapper;
+	}
+	
+	
 }

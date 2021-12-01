@@ -74,17 +74,10 @@ public class TemplateController {
 	 * @return All {@link TemplateDto}
 	 */
 	@ResponseFilter
-	//@PreAuthorize("hasAnyRole(@authorizedRoles.getGettemplates())")
 	@GetMapping
 	public ResponseWrapper<TemplateResponseDto> getAllTemplate() {
-		auditUtil.auditRequest(String.format(MasterDataConstant.GET_ALL, TemplateDto.class.getSimpleName()),
-				MasterDataConstant.AUDIT_SYSTEM,
-				String.format(MasterDataConstant.GET_ALL, TemplateDto.class.getSimpleName()));
 		ResponseWrapper<TemplateResponseDto> responseWrapper = new ResponseWrapper<>();
 		responseWrapper.setResponse(templateService.getAllTemplate());
-		auditUtil.auditRequest(String.format(MasterDataConstant.GET_ALL_SUCCESS, TemplateDto.class.getSimpleName()),
-				MasterDataConstant.AUDIT_SYSTEM,
-				String.format(MasterDataConstant.GET_ALL_SUCCESS_DESC, TemplateDto.class.getSimpleName()));
 		return responseWrapper;
 	}
 
@@ -95,17 +88,10 @@ public class TemplateController {
 	 * @return All {@link TemplateDto}
 	 */
 	@ResponseFilter
-	//@PreAuthorize("hasAnyRole(@authorizedRoles.getGettemplateslangcode())")
 	@GetMapping("/{langcode}")
 	public ResponseWrapper<TemplateResponseDto> getAllTemplateBylangCode(@PathVariable("langcode") String langCode) {
-		auditUtil.auditRequest(String.format(MasterDataConstant.GET_LANG, TemplateDto.class.getSimpleName()),
-				MasterDataConstant.AUDIT_SYSTEM,
-				String.format(MasterDataConstant.GET_LANG, TemplateDto.class.getSimpleName()));
 		ResponseWrapper<TemplateResponseDto> responseWrapper = new ResponseWrapper<>();
 		responseWrapper.setResponse(templateService.getAllTemplateByLanguageCode(langCode));
-		auditUtil.auditRequest(String.format(MasterDataConstant.GET_LANG_SUCCESS, TemplateDto.class.getSimpleName()),
-				MasterDataConstant.AUDIT_SYSTEM,
-				String.format(MasterDataConstant.GET_LANG_SUCCESS_DESC, TemplateDto.class.getSimpleName()));
 		return responseWrapper;
 	}
 
@@ -118,7 +104,6 @@ public class TemplateController {
 	 * @return All {@link TemplateDto}
 	 */
 	@ResponseFilter
-	//@PreAuthorize("hasAnyRole(@authorizedRoles.getGettemplateslangcodetemplatetypecode())")
 	@GetMapping("/{langcode}/{templatetypecode}")
 	public ResponseWrapper<TemplateResponseDto> getAllTemplateBylangCodeAndTemplateTypeCode(
 			@PathVariable("langcode") String langCode, @PathVariable("templatetypecode") String templateTypeCode) {
@@ -138,7 +123,6 @@ public class TemplateController {
 	@ResponseFilter
 	@PreAuthorize("hasAnyRole(@authorizedRoles.getPosttemplates())")
 	@PostMapping
-	//@PreAuthorize("hasAnyRole('GLOBAL_ADMIN','ZONAL_ADMIN')")
 	@ApiOperation(value = "Service to create template ", notes = "create Template  and return  code")
 	@ApiResponses({ @ApiResponse(code = 201, message = " successfully created"),
 			@ApiResponse(code = 400, message = " Request body passed  is null or invalid"),
@@ -162,7 +146,6 @@ public class TemplateController {
 	@ResponseFilter
 	@PreAuthorize("hasAnyRole(@authorizedRoles.getPuttemplates())")
 	@PutMapping
-	//@PreAuthorize("hasAnyRole('GLOBAL_ADMIN','ZONAL_ADMIN')")
 	@ApiOperation(value = "Service to update template ", notes = "update Template  and return  code ")
 	@ApiResponses({ @ApiResponse(code = 200, message = " successfully updated"),
 			@ApiResponse(code = 400, message = " Request body passed  is null or invalid"),
@@ -186,7 +169,6 @@ public class TemplateController {
 	@ResponseFilter
 	@PreAuthorize("hasAnyRole(@authorizedRoles.getDeletetemplatesid())")
 	@DeleteMapping("/{id}")
-	//@PreAuthorize("hasAnyRole('GLOBAL_ADMIN','ZONAL_ADMIN')")
 	@ApiOperation(value = "Service to delete template", notes = "Delete template and return template id")
 	@ApiResponses({ @ApiResponse(code = 200, message = "When template successfully deleted"),
 			@ApiResponse(code = 400, message = "When Request body passed  is null or invalid"),
@@ -206,10 +188,8 @@ public class TemplateController {
 	 * @return All {@link TemplateDto}
 	 */
 
-	@PreAuthorize("hasAnyRole(@authorizedRoles.getGettemplatestemplatetypecodescode())")
 	@GetMapping("/templatetypecodes/{code}")
 	@ResponseFilter
-	//@PreAuthorize("hasAnyRole('INDIVIDUAL','REGISTRATION_PROCESSOR','PRE_REGISTRATION','REGISTRATION_SUPERVISOR','REGISTRATION_OFFICER','ID_AUTHENTICATION','AUTH','ZONAL_ADMIN','GLOBAL_ADMIN','PRE_REGISTRATION_ADMIN','RESIDENT','PARTNER','AUTH_PARTNER','PARTNER_ADMIN','DEVICE_PROVIDER','DEVICE_MANAGER')")
 	public ResponseWrapper<TemplateResponseDto> getAllTemplateByTemplateTypeCode(
 			@PathVariable("code") String templateTypeCode) {
 
@@ -228,9 +208,8 @@ public class TemplateController {
 	 * 
 	 * @return the response i.e. pages containing the templates.
 	 */
-	//@PreAuthorize("hasAnyRole('ZONAL_ADMIN','GLOBAL_ADMIN')")
 	@ResponseFilter
-	@PreAuthorize("hasAnyRole(@authorizedRoles.getGettemplatesall())")
+	//@PreAuthorize("hasAnyRole(@authorizedRoles.getGettemplatesall())")
 	@GetMapping("/all")
 	@ApiOperation(value = "Retrieve all the templates with additional metadata", notes = "Retrieve all the templates with the additional metadata")
 	@ApiResponses({ @ApiResponse(code = 200, message = "list of templates"),
@@ -254,7 +233,6 @@ public class TemplateController {
 	@ResponseFilter
 	@PreAuthorize("hasAnyRole(@authorizedRoles.getPosttemplatessearch())")
 	@PostMapping("/search")
-	//@PreAuthorize("hasAnyRole('ZONAL_ADMIN','GLOBAL_ADMIN')")
 	@ApiOperation(value = "Search template details")
 	@ApiResponses({ @ApiResponse(code = 200, message = "list of templates"),
 			@ApiResponse(code = 500, message = "Error occured while retrieving templates") })
@@ -281,7 +259,6 @@ public class TemplateController {
 	@ResponseFilter
 	@PreAuthorize("hasAnyRole(@authorizedRoles.getPosttemplatesfiltervalues())")
 	@PostMapping("/filtervalues")
-	//@PreAuthorize("hasAnyRole('ZONAL_ADMIN','GLOBAL_ADMIN')")
 	@ApiOperation(value = "filter template details")
 	@ApiResponses({ @ApiResponse(code = 200, message = "list of templates"),
 			@ApiResponse(code = 500, message = "Error occured while retrieving templates") })
@@ -302,7 +279,6 @@ public class TemplateController {
 	@ResponseFilter
 	@PreAuthorize("hasAnyRole(@authorizedRoles.getPatchtemplates())")
 	@PatchMapping
-	//@PreAuthorize("hasAnyRole('GLOBAL_ADMIN','ZONAL_ADMIN')")
 	@ApiOperation(value = "Service to update template ", notes = "update Template  and return  code ")
 	public ResponseWrapper<StatusResponseDto> updateTemplateStatus(@Valid @RequestParam boolean isActive,
 			@RequestParam String id) {
@@ -323,9 +299,8 @@ public class TemplateController {
 	 * @return List<String> list of missing ids/ codes
 	 */
 	@ResponseFilter
-	@PreAuthorize("hasAnyRole(@authorizedRoles.getGettemplatesmissingidslangcode())")
+	//@PreAuthorize("hasAnyRole(@authorizedRoles.getGettemplatesmissingidslangcode())")
 	@GetMapping("/missingids/{langcode}")
-	//@PreAuthorize("hasAnyRole('ZONAL_ADMIN','GLOBAL_ADMIN')")
 	public ResponseWrapper<List<MissingDataDto>> getMissingTemplateDetails(
 			@PathVariable("langcode") String langCode, @RequestParam(required = false) String fieldName) {
 		ResponseWrapper<List<MissingDataDto>> responseWrapper = new ResponseWrapper<>();

@@ -262,8 +262,7 @@ public class DeviceSpecificationControllerTest {
 	@Test
 	@WithUserDetails("global-admin")
 	public void t015deleteDeviceSpecificationTest() throws Exception {
-		 MasterDataTest.checkResponse(mockMvc.perform(MockMvcRequestBuilders.delete("/devicespecifications/165")
-				.contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(deviceSpecification)))
+		 MasterDataTest.checkResponse(mockMvc.perform(MockMvcRequestBuilders.delete("/devicespecifications/165"))
 				.andReturn(), "KER-MSD-121");
 	}
 
@@ -278,8 +277,7 @@ public class DeviceSpecificationControllerTest {
 	@Test
 	@WithUserDetails("global-admin")
 	public void t017deleteDeviceSpecificationFailTest() throws Exception {
-		 MasterDataTest.checkResponse(mockMvc.perform(MockMvcRequestBuilders.delete("/devicespecifications/167")
-				.contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(deviceSpecification)))
+		 MasterDataTest.checkResponse(mockMvc.perform(MockMvcRequestBuilders.delete("/devicespecifications/167"))
 				.andReturn(),"KER-MSD-012");
 	}
 
@@ -305,5 +303,26 @@ public class DeviceSpecificationControllerTest {
 		 MasterDataTest.checkResponse(mockMvc.perform(MockMvcRequestBuilders.get("/devicespecifications/devicetypecode/CMR11"))
 				.andReturn(),"KER-MSD-012");
 	}
+	
+	@Test
+	@WithUserDetails("global-admin")
+	public void t021deleteDeviceSpecificationTest() throws Exception {
+		 MasterDataTest.checkResponse(mockMvc.perform(MockMvcRequestBuilders.delete("/devicespecifications/1"))
+				.andReturn(), null);
+	}
 
+	@Test
+	@WithUserDetails("global-admin")
+	public void t022getDeviceSpecificationByLanguageCodeTest() throws Exception {
+		 MasterDataTest.checkResponse(mockMvc.perform(MockMvcRequestBuilders.get("/devicespecifications"))
+				.andReturn(), null);
+	}
+	
+	@Test
+	@WithUserDetails("global-admin")
+	public void t023getDeviceSpecificationByLanguageCodeTest() throws Exception {
+		 MasterDataTest.checkResponse(mockMvc.perform(MockMvcRequestBuilders.get("/devicespecifications/eng"))
+				.andReturn(), null);
+	}
+	
 }

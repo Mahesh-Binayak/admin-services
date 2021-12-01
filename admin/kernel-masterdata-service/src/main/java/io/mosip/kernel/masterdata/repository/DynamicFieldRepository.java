@@ -3,6 +3,7 @@ package io.mosip.kernel.masterdata.repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import io.mosip.kernel.masterdata.dto.DynamicFieldNameDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
@@ -106,6 +107,12 @@ public interface DynamicFieldRepository extends BaseRepository<DynamicField, Str
 	
 	@Query("SELECT DISTINCT name FROM DynamicField WHERE (isDeleted is null or isDeleted = false)")
 	List<String> getDistinctDynamicFields();
+
+	@Query("SELECT new io.mosip.kernel.masterdata.dto.DynamicFieldNameDto(name, description, langCode, isActive) FROM DynamicField " +
+			"WHERE (isDeleted is null or isDeleted = false) " +
+			"group by name, description, langCode, isActive")
+	List<DynamicFieldNameDto> getDistinctDynamicFieldsWithDescription();
+
 	/**
 	 * Update dynamic field value specific to a language code
 	 * 
@@ -186,4 +193,7 @@ public interface DynamicFieldRepository extends BaseRepository<DynamicField, Str
 
 	@Query("FROM DynamicField WHERE lower(name)=lower(?1) and langCode=?2")
 	List<DynamicField> findAllDynamicFieldValuesByNameAndLangCode(String fieldName, String langCode);
+
+	@Query("FROM DynamicField WHERE (isDeleted is null OR isDeleted = false) AND lower(name)=lower(?1)")
+	List<DynamicField> findAllDynamicFieldValuesByName(String fieldName);
 }

@@ -7,6 +7,8 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -165,7 +167,8 @@ public class SchemaServiceTest {
 		dto.setName("bloodType");
 		dto.setDataType("simpleType");
 		dto.setLangCode("eng");
-		
+		dto.setFieldVal(new ObjectMapper().readTree("{\"code\":\"oo\",\"value\":\"ooo\"}"));
+
 		dynamicFieldService.createDynamicField(dto);
 	}
 	
@@ -181,6 +184,7 @@ public class SchemaServiceTest {
 		dto.setName("bloodType");
 		dto.setDataType("simpleType");
 		dto.setLangCode("eng");
+		dto.setFieldVal(new ObjectMapper().readTree("{\"code\":\"oo\",\"value\":\"ooo\"}"));
 		
 		dynamicFieldService.updateDynamicField("1233", dto);
 	}
